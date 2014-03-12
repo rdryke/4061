@@ -10,6 +10,16 @@ void mm_end(unsigned long *alloc_num, unsigned long *free_num);
 int mm_assign(char *ptr, char val);
 unsigned long mm_check();
 
+struct spot {
+	char* ptr;
+	bool free;
+	unsigned long size;
+	struct spot prev;
+	struct spot next;
+};
+
+static struct spot head;
+
 
 
 

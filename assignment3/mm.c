@@ -3,6 +3,17 @@
 
 int mm_init(unsigned long size) {
     /* create a memory pool and initialize data structure */
+
+	char* start = (char*)malloc(sizeof(char)*size);
+	if(!(start))
+		return -1;
+	struct spot temp = {NULL, NULL, NULL, NULL, NULL};
+	temp.ptr = start;
+	temp.free = true;
+	temp.size = size;
+	head = temp;
+	return 0;
+	
 }
 
 
