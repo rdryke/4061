@@ -40,6 +40,7 @@ char *mm_alloc(unsigned long nbytes) {
 			}
 		}
 	}
+	printf("Request declined: not enough memory available!");
 }
 
 
