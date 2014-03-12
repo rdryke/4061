@@ -18,7 +18,6 @@ struct spot {
 	struct spot next;
 };
 
-static struct spot head;
 
 
 
