@@ -41,16 +41,19 @@ char *mm_alloc(unsigned long nbytes) {
 				return  current.ptr;
 			}
 		}
+	current = current.next;
 	}
 	printf("Request declined: not enough memory available!");
+	return NULL;
 }
 
 
 int mm_free(char *ptr) {
+	/* Check if ptr is valid or not. Only free the valid pointer. Defragmentation. */
 	struct spot current = head;
 	while (!(current))
 	{
-		if (current.ptr = ptr)
+		if (current.ptr = ptr && current.free == 0)
 		{
 			if (current.prev != NULL && current.prev.free)
 			{
@@ -73,7 +76,7 @@ int mm_free(char *ptr) {
 	}
 	printf("Free error: not the right pointer!\n");
 	return -1;
-	/* Check if ptr is valid or not. Only free the valid pointer. Defragmentation. */
+
 }
 
 void mm_end(unsigned long *alloc_num, unsigned long *free_num) {
@@ -81,6 +84,19 @@ void mm_end(unsigned long *alloc_num, unsigned long *free_num) {
 	int nallocated = 0;
 	int nfree = 0;
 	while (!(current))
+	{
+		if (current.free)
+		{
+			nfree++;
+		}
+		else
+		{
+			nallocated++;
+		}
+	}
+	free(head.ptr);
+	alloc_num = nallocated;
+	free_num = nfree;
 }
 
 
