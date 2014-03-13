@@ -12,10 +12,10 @@ unsigned long mm_check();
 
 struct spot {
 	char* ptr;
-	bool free;
+	int free;
 	unsigned long size;
-	struct spot prev;
-	struct spot next;
+	struct spot *prev;
+	struct spot *next;
 };
 
 
