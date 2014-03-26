@@ -9,6 +9,8 @@ int mm_free(char *ptr);
 void mm_end(unsigned long *free_num);
 int mm_assign(char *ptr, char val);
 unsigned long mm_check();
+void printStructure();
+void printStructureReverse();
 
 struct spot {
 	char* ptr;

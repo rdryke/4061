@@ -23,10 +23,35 @@ int mm_init(unsigned long size) {
 	
 }
 
+void printStructure()
+{
+	struct spot *current = head;
+printf("\n\n");
+	while(current != NULL) 
+	{
+//		printf("%d\n", current->size);
+		printf("%d\n", current->free);
+current = current->next;
+	}
+	
+}
 
-void
 
-
+void printStructureReverse()
+{
+	struct spot *current = head;
+printf("\n\n");
+	while(current->next != NULL) 
+	{
+current = current->next;
+	}
+while (current != NULL)
+{
+		printf("%d\n", current->free);
+current = current->prev;
+}
+	
+}
 
 
 
@@ -41,7 +66,7 @@ char *mm_alloc(unsigned long nbytes) {
 		{
 			if(current->size >= nbytes) 
 			{
-				unsigned long diff = nbytes - current->size;
+				unsigned long diff = current->size - nbytes;
 				if(diff > 0) 
 				{
 //printf("%d\n", (int) nbytes);
@@ -50,11 +75,14 @@ char *mm_alloc(unsigned long nbytes) {
 					freespace->free = 1;
 					freespace->size = diff;
 					freespace->next = current->next;
+					if (freespace->next != NULL)
+						freespace->next->prev = freespace;
 					freespace->prev = current;
 					current->next = freespace;
+					current->size = nbytes;
 				}
 				current->free = 0;
-printf("%d\n", (int) current->next->free);
+//printf("%d\n", (int) current->next->free);
 				return  current->ptr;
 			}
 		}
@@ -68,14 +96,18 @@ printf("%d\n", (int) current->next->free);
 int mm_free(char *ptr) {
 	/* Check if ptr is valid or not. Only free the valid pointer. Defragmentation. */
 	struct spot *current = head;
+
 	while (current != NULL)
 	{
+//if (current->prev != NULL)
+//printf("%d\n", current->prev->free);
 		if (current->ptr == ptr && current->free == 0)
 		{
-//printf("%d\n", current->prev->free);
+
+
 			if (current->prev != NULL && current->prev->free == 1)
 			{
-printf("bla\n");
+//printf("bla\n");
 				current->prev->size += current->size;
 				current->prev->next = current->next;
 				current = current->prev;
