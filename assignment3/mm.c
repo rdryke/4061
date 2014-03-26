@@ -82,9 +82,8 @@ int mm_free(char *ptr) {
 
 }
 
-void mm_end(unsigned long *alloc_num, unsigned long *free_num) {
+void mm_end(unsigned long *free_num) {
 	/* Count total allocated blocks. Count total free blocks. Clean up data structure. Free memory pool */
-	int nallocated = 0;
 	int nfree = 0;
 	struct spot *current = head;
 	while (!(current))
@@ -93,13 +92,9 @@ void mm_end(unsigned long *alloc_num, unsigned long *free_num) {
 		{
 			nfree++;
 		}
-		else
-		{
-			nallocated++;
-		}
+		current = current->next;
 	}
 	free(outside);
-	*alloc_num = (unsigned long)nallocated;
 	*free_num = (unsigned long) nfree;
 }
 
