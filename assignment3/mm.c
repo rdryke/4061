@@ -10,7 +10,7 @@ int mm_init(unsigned long size) {
 
 	char* start = (char*)malloc(sizeof(char)*size);
 	outside = start;
-	if(!(start))
+	if(start == NULL)
 	{
 		return -1;
 	}
@@ -24,14 +24,27 @@ int mm_init(unsigned long size) {
 }
 
 
+void
+
+
+
+
+
+
 char *mm_alloc(unsigned long nbytes) {
     /* allocate nbytes memory space from the pool using first fit algorithm, and return it to the requester */
 	struct spot *current = head;
-	while(!(current)) {
-		if(current->free) {
-			if(current->size >= nbytes) {
+
+	while(current != NULL) 
+	{
+		if(current->free == 1) 
+		{
+			if(current->size >= nbytes) 
+			{
 				unsigned long diff = nbytes - current->size;
-				if(diff) {
+				if(diff > 0) 
+				{
+//printf("%d\n", (int) nbytes);
 					struct spot *freespace = (struct spot *) malloc(sizeof(struct spot));
 					freespace->ptr = current->ptr + nbytes;
 					freespace->free = 1;
@@ -41,6 +54,7 @@ char *mm_alloc(unsigned long nbytes) {
 					current->next = freespace;
 				}
 				current->free = 0;
+printf("%d\n", (int) current->next->free);
 				return  current->ptr;
 			}
 		}
@@ -54,12 +68,14 @@ char *mm_alloc(unsigned long nbytes) {
 int mm_free(char *ptr) {
 	/* Check if ptr is valid or not. Only free the valid pointer. Defragmentation. */
 	struct spot *current = head;
-	while (!(current))
+	while (current != NULL)
 	{
 		if (current->ptr == ptr && current->free == 0)
 		{
-			if (current->prev != NULL && current->prev->free)
+//printf("%d\n", current->prev->free);
+			if (current->prev != NULL && current->prev->free == 1)
 			{
+printf("bla\n");
 				current->prev->size += current->size;
 				current->prev->next = current->next;
 				current = current->prev;
@@ -70,6 +86,7 @@ int mm_free(char *ptr) {
 			}
 			if (current->next != NULL && current->next->free == 1)
 			{
+
 				current->size += current->next->size;
 				current->next = current->next->next;
 			}
@@ -84,18 +101,18 @@ int mm_free(char *ptr) {
 
 void mm_end(unsigned long *free_num) {
 	/* Count total allocated blocks. Count total free blocks. Clean up data structure. Free memory pool */
-	int nfree = 0;
+	unsigned long nfree = 0;
 	struct spot *current = head;
-	while (!(current))
+	while (current != NULL)
 	{
-		if (current->free)
+		if (current->free == 1)
 		{
 			nfree++;
 		}
 		current = current->next;
 	}
 	free(outside);
-	*free_num = (unsigned long) nfree;
+	*free_num = nfree;
 }
 
 
