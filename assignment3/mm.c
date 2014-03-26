@@ -3,11 +3,13 @@
 #include "mm.h"
 
 static struct spot *head;
+static char * outside;
 
 int mm_init(unsigned long size) {
     /* create a memory pool and initialize data structure */
 
 	char* start = (char*)malloc(sizeof(char)*size);
+	outside = start;
 	if(!(start))
 	{
 		return -1;
@@ -31,7 +33,7 @@ char *mm_alloc(unsigned long nbytes) {
 				unsigned long diff = nbytes - current->size;
 				if(diff) {
 					struct spot *freespace = (struct spot *) malloc(sizeof(struct spot));
-					freespace->ptr = &current->ptr + nbytes;
+					freespace->ptr = current->ptr + nbytes;
 					freespace->free = 1;
 					freespace->size = diff;
 					freespace->next = current->next;
@@ -54,7 +56,7 @@ int mm_free(char *ptr) {
 	struct spot *current = head;
 	while (!(current))
 	{
-		if (current->ptr = ptr && current->free == 0)
+		if (current->ptr == ptr && current->free == 0)
 		{
 			if (current->prev != NULL && current->prev->free)
 			{
@@ -96,9 +98,9 @@ void mm_end(unsigned long *alloc_num, unsigned long *free_num) {
 			nallocated++;
 		}
 	}
-	free(head->ptr);
-	alloc_num = nallocated;
-	free_num = nfree;
+	free(outside);
+	*alloc_num = (unsigned long)nallocated;
+	*free_num = (unsigned long) nfree;
 }
 
 
