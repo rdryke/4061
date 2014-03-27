@@ -23,7 +23,7 @@ int mm_init(unsigned long size) {
 	temp->free = 1;
 	temp->size = size;
 	head = temp;
-	FILE * ftemp2 = fopen("log.txt", "w");
+	FILE * ftemp2 = fopen("out.log", "w");
 	fclose(ftemp2);
 	return 0;
 	
@@ -94,7 +94,7 @@ char *mm_alloc(unsigned long nbytes) {
 		}
 	current = current->next;
 	}
-	int fp = open("log.txt", O_WRONLY | O_APPEND);
+	int fp = open("out.log", O_WRONLY | O_APPEND);
 	int sout = dup(1);
 	fflush(stdout);
         close(1);
@@ -140,7 +140,7 @@ int mm_free(char *ptr) {
 		}
 	current = current->next;
 	}
-	int fp = open("log.txt", O_WRONLY | O_APPEND);
+	int fp = open("out.log", O_WRONLY | O_APPEND);
 	int sout = dup(1);
 	fflush(stdout);
         close(1);
@@ -172,10 +172,46 @@ void mm_end(unsigned long *free_num) {
 
 /* Extra Credit Part */
 int mm_assign(char *ptr, char val) {
-	/* Check buffer overflow. If ptr is valid, *ptr=val. */
+
+	struct spot *current = head;
+	while (current != NULL)
+	{
+		if (current->free == 0)
+		{
+			if (ptr >= current->ptr && ptr < current->ptr + current->size)
+			{
+				*ptr = val;
+				return 0;
+			}
+		}
+		current = current->next;
+	}
+	int fp = open("out.log", O_WRONLY | O_APPEND);
+	int sout = dup(1);
+	fflush(stdout);
+        close(1);
+        dup(fp);
+	printf("Buffer Overflow: Try to access illegal memory space.\n");
+	fflush(stdout);
+        close(fp);
+	dup2(sout, 1);
+	return -1;
+	
 }
 
 unsigned long mm_check() {
-   /* Before calling mm_end, use this function to check memory leaks and return the number of leaking blocks */
+
+	unsigned long n_alloc = 0;
+	struct spot *current = head;
+	while (current != NULL)
+	{
+		if (current->free == 0)
+		{
+			n_alloc++;
+		}
+		current = current->next;
+	}
+return n_alloc;
+
 }
 
