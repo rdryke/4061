@@ -21,13 +21,11 @@ int main()
 
 
  D=mm_alloc(20); 
-printStructure();
-E = mm_alloc(2000);
-printStructure();
+E = mm_alloc(20000);
  mm_free(C); //After this block is freed, it will be coalesced with 
-mm_free(E);
+//mm_free(E);
  
- mm_free(D); //Trying to free the memory space pointed by an invalid pointer. 
+ mm_free(D + 10); //Trying to free the memory space pointed by an invalid pointer. 
 
  //leaks=mm_check(); 
  //printf("Total memory leaks:%lu\n", leaks); 

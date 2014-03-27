@@ -1,3 +1,7 @@
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "mm.h"
@@ -19,6 +23,8 @@ int mm_init(unsigned long size) {
 	temp->free = 1;
 	temp->size = size;
 	head = temp;
+	FILE * ftemp2 = fopen("log.txt", "w");
+	fclose(ftemp2);
 	return 0;
 	
 }
@@ -88,7 +94,15 @@ char *mm_alloc(unsigned long nbytes) {
 		}
 	current = current->next;
 	}
-	printf("Request declined: not enough memory available!");
+	int fp = open("log.txt", O_WRONLY | O_APPEND);
+	int sout = dup(1);
+	fflush(stdout);
+        close(1);
+        dup(fp);
+	printf("Request declined: not enough memory available!\n");
+	fflush(stdout);
+        close(fp);
+	dup2(sout, 1);
 	return NULL;
 }
 
@@ -126,7 +140,15 @@ int mm_free(char *ptr) {
 		}
 	current = current->next;
 	}
+	int fp = open("log.txt", O_WRONLY | O_APPEND);
+	int sout = dup(1);
+	fflush(stdout);
+        close(1);
+        dup(fp);
 	printf("Free error: not the right pointer!\n");
+	fflush(stdout);
+        close(fp);
+	dup2(sout, 1);
 	return -1;
 
 }

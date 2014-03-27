@@ -1,6 +1,5 @@
 all: mm.o test.c  mm.o
-	g++ -o t test.c mm.o
-	./t
+	g++ -o mm test.c mm.o
 mm.o: mm.c mm.h
 	g++ -c mm.c -o mm.o
 
