@@ -1,12 +1,14 @@
-#include <fcntl.h>
 #include <pthread.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <ctype.h>
+
+
 
 struct linkedList {
         char * path;
@@ -21,18 +23,16 @@ char * output;
 struct linkedList * head = NULL;
 struct linkedList * tail = NULL;
 char * logPath;
-char * decrypter(char*, int);
-pthread_mutex_t qLock;
-pthread_mutex_t logLock;
+char * decrypter(char*);
 int logDes;
-
+pthread_mutex_t qLock;
 
 void printData()
 {
 	struct linkedList * current =  head;
 	while (current != NULL)
 	{
-		printf("|%s|",current->path);
+		printf("%s",current->path);
 		current = current->next;
 	}
 }
@@ -81,12 +81,8 @@ void getData(char * filename, int n)
 		struct linkedList * temp =  malloc(sizeof(struct linkedList));
 		head = temp;
 		char * strtemp = malloc(strlen(line));
-		strcpy(strtemp, line);
-		char * nl;
-		if ((nl = strchr(strtemp, '\n')) != NULL)
-		{
-			*nl = '\0';
-		}
+		char * tok = strtok(line, "\n");
+		strcpy(strtemp, tok);
 		head->path = strtemp;
 		tail = head;
 	}
@@ -95,12 +91,8 @@ void getData(char * filename, int n)
 	{
 		struct linkedList * temp =  malloc(sizeof(struct linkedList));
 		char * strtemp = malloc(strlen(line));
-		strncpy(strtemp, line, strlen(line));
-		char * nl;
-		if ((nl = strchr(strtemp, '\n')) != NULL)
-		{
-			*nl = '\0';
-		}
+		char * tok = strtok(line, "\n");
+		strcpy(strtemp, tok);
 		temp->path = strtemp;
 		tail->next = temp;
 		tail = temp;
@@ -112,26 +104,20 @@ void getData(char * filename, int n)
 }
 
 
-void clientFunction(long threadID)
+void clientFunction(long threadID, char * fileName)
 {
 
 	int fileSize;
 	int fileDes;
-	char * fileName;
 	char * text;
 	char * decryptedText;
 	int writeNum;
+	int writeNum2;
 	int writeFileDes;
 
 	char log[strlen(fileName)+20];
+	char log2[strlen(fileName)+30];
 	struct stat fileStuff;
-	
-	pthread_mutex_lock(&qLock);
-
-		fileName = head->path;	
-		head = head->next;
-
-	pthread_mutex_unlock(&qLock);
 
 	stat(fileName, &fileStuff);
 	fileSize = fileStuff.st_size;
@@ -141,8 +127,13 @@ void clientFunction(long threadID)
 
 	if (fileDes < 0)
 	{
-		printf("Could not open file: %s\n", fileName);
-        	exit(-1);
+		writeNum2 = sprintf(log2, "Could not open file: %s\n", fileName);
+		if(write(logDes, log2, writeNum2) < 0)
+		{
+			printf("Failed to write to log file\n");
+			exit(-1);
+		}
+		return;
    	}
 	if (read(fileDes, text, fileSize) < 0) 
 	{
@@ -151,9 +142,8 @@ void clientFunction(long threadID)
     	}
 	
 	decryptedText = malloc(sizeof(char) * fileSize);
-	decryptedText = decrypter(text, fileSize);
+	decryptedText = decrypter(text);
 
-	
 	writeNum = sprintf(log, "%s: %ld\n", fileName, threadID);
 	if(write(logDes, log, writeNum) < 0)
 	{
@@ -162,7 +152,6 @@ void clientFunction(long threadID)
 	}
 	char * name = strrchr(fileName, '/');
 	char * outputFileName = malloc(sizeof(char) * (strlen(name) + strlen(output)));
-printf("%s\n", outputFileName);
 	strcpy(outputFileName, output);
 	strcat(outputFileName, name);
 	
@@ -175,59 +164,69 @@ printf("%s\n", outputFileName);
 	{
 		printf("Write to client output file failed\n");
 	}
-
-	
+	close(writeFileDes);
+	close(fileDes);
+	free(text);
+	free(decryptedText);
+	free(outputFileName);
 }
 
-char * decrypter(char * text, int length)
+char * decrypter(char * text)
 {
+	int length = strlen(text);
+	char * output = malloc(sizeof(char)*length);
+	strcpy(output, text);
 	int i;
-	int k;
-	char * result = malloc(sizeof(char)*length);
-	char c;
-	for (i = 0; i < length; i++) 
+	int cint;
+	for (i = 0; i < length; i++)
 	{
-		c = result[i];
-		
-
-		if(isalpha(c))
+		cint = *(output + i);
+		if ((65 <= cint && cint <= 88) || (97 <= cint && cint <= 120))
 		{
-			if(c == 'y')
-			{
-				result[i] = 'a';
-			}
-			else if(c == 'z')
-			{
-				result[i] = 'b';
-			}
-			else if(c == 'Y')
-			{
-				result[i] = 'A';
-			}
-			else if(c == 'Z')
-			{
-				result[i] = 'B';
-			}
-			else
-			{
-				*(result + i) = *(result + i) + 2;
-			}
+			*(output + i) = cint + 2;
 		}
-
-    	}
-	return result;
+		else if (cint == 89)
+		{
+			*(output + i) = 65;
+		}
+		else if (cint == 90)
+		{
+			*(output + i) = 66;
+		}
+		else if (cint == 121)
+		{
+			*(output + i) = 97;
+		}
+		else if (cint == 122)
+		{
+			*(output + i) = 98;
+		}
+	}
+    return output;
 	
 }
 
 
 
-void * pthreadFunction()
+void * pthreadFunction( void * s)
 {
+	int check;
+	int i;
+	char * fileName;
 	while (head != NULL) 
 	{
-        	if (head != NULL)
+		check = 0;
+		pthread_mutex_lock(&qLock);
+        		if (head != NULL)
+			{
+				fileName = head->path;	
+				head = head->next;
+				check = 1;
+			}
+		pthread_mutex_unlock(&qLock);
+		if (check == 1)
 		{
-			clientFunction((long) pthread_self());
+			clientFunction((long) pthread_self(), fileName);
 		}
     	}
 
@@ -247,7 +246,7 @@ int main ( int argc, char *argv[] )
 	}
 	else if (argc != 3) 
 	{
-        	printf("ERROR: Invalid arguments.\nUsage: ./retrieve clients.txt output [num_threads]\n");
+        	printf("ERROR: Invalid arguments.\nFormat is: ./retrieve clients.txt output [num_threads]\n");
         	return -1;
     	}
 	clientPath = argv[1];
@@ -269,31 +268,33 @@ int main ( int argc, char *argv[] )
 	nclients = numberOfLines(clientPath);
 	getData(clientPath, nclients);
 printData();
+
 	if (pthread_mutex_init(&qLock, NULL) != 0) 
 	{
         	perror("mutex qLock failed\n");
         	return -1;
 	}
 
-	if (pthread_mutex_init(&logLock, NULL) != 0) 
-	{
-        	perror("mutex logLock failed\n");
-        	return -1;
-	}
 	
 	pthread_t threadArray[num_threads];
    	int i;
-    	for (i = 0; i < num_threads; i++)
+	
+	
+
+	   for (i = 0; i < num_threads; i++)
 	{
 
-	        pthread_create(&threadArray[i], NULL, pthreadFunction, NULL);
+	        pthread_create(&threadArray[i], NULL, pthreadFunction, (void *)i);
     	}
 
 	for (i = 0; i < num_threads; i++)
 	{
 	        pthread_join(threadArray[i], NULL);
     	}
-
+	close(logDes);
+	free(output);
+	free(logPath);
+    	
 }
 
 
