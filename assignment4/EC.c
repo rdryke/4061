@@ -26,6 +26,10 @@ char * logPath;
 char * decrypter(char*);
 int logDes;
 pthread_mutex_t qLock;
+int qsize;
+int currentSize;
+int currentLine;
+int nclients;
 
 void printData()
 {
@@ -71,12 +75,11 @@ int numberOfLines(char * filename)
 }
 
 
-void getData(char * filename)
+void getDataFirst(char * filename)
 {
-
 	char* line = malloc(500*sizeof(char));
 	FILE * file = file_open(filename);
-	if ((line = file_getline(line,file)) != NULL)
+	if ((line = file_getline(line,file)) != NULL && currentSize < qsize)
 	{
 		struct linkedList * temp =  malloc(sizeof(struct linkedList));
 		head = temp;
@@ -85,9 +88,13 @@ void getData(char * filename)
 		strcpy(strtemp, tok);
 		head->path = strtemp;
 		tail = head;
+		currentLine++;
+		pthread_mutex_lock(&qLock);
+			currentSize++;
+		pthread_mutex_unlock(&qLock);
 	}
 	
-	while((line = file_getline(line,file)) != NULL)
+	while((line = file_getline(line,file)) != NULL && currentSize < qsize)
 	{
 		struct linkedList * temp =  malloc(sizeof(struct linkedList));
 		char * strtemp = malloc(strlen(line));
@@ -96,6 +103,44 @@ void getData(char * filename)
 		temp->path = strtemp;
 		tail->next = temp;
 		tail = temp;
+		currentLine++;
+		
+		pthread_mutex_lock(&qLock);
+			currentSize++;
+		pthread_mutex_unlock(&qLock);
+	}
+	fclose(file);
+	free(line);
+	
+
+}
+
+
+void getDataSecond(char * filename)
+{
+
+	char* line = malloc(500*sizeof(char));
+	FILE * file = file_open(filename);
+	int i;
+	for (i = 0; i<currentLine; i++)
+	{
+		line = file_getline(line,file);
+	}
+	
+	while((line = file_getline(line,file)) != NULL && currentSize < qsize)
+	{
+		struct linkedList * temp =  malloc(sizeof(struct linkedList));
+		char * strtemp = malloc(strlen(line));
+		char * tok = strtok(line, "\n");
+		strcpy(strtemp, tok);
+		temp->path = strtemp;
+		tail->next = temp;
+		tail = temp;
+		currentLine++;
+		
+		pthread_mutex_lock(&qLock);
+			currentSize++;
+		pthread_mutex_unlock(&qLock);
 	}
 	fclose(file);
 	free(line);
@@ -159,10 +204,12 @@ void clientFunction(long threadID, char * fileName)
 	if (writeFileDes < 0)
 	{
 		printf("Could not open client output file\n") ;
+		exit(-1);
 	}
 	if (write(writeFileDes, decryptedText, fileSize) < 0)
 	{
 		printf("Write to client output file failed\n");
+		exit(-1);
 	}
 	close(writeFileDes);
 	close(fileDes);
@@ -222,6 +269,7 @@ void * pthreadFunction( void * s)
 				fileName = head->path;	
 				head = head->next;
 				check = 1;
+				currentSize--;
 			}
 		pthread_mutex_unlock(&qLock);
 		if (check == 1)
@@ -238,11 +286,16 @@ void * pthreadFunction( void * s)
 
 int main ( int argc, char *argv[] )
 {
-	int nclients;
+
+	currentLine = 0;
+	currentSize = 0;
+	
 	num_threads = 5;
-	if (argc == 4)
+	qsize = 7;
+	if (argc == 5)
 	{
 		num_threads = atoi(argv[3]);
+		qsize = atoi(argv[4]);
 	}
 	else if (argc != 3) 
 	{
@@ -266,7 +319,7 @@ int main ( int argc, char *argv[] )
 	}
 
 	nclients = numberOfLines(clientPath);
-	getData(clientPath);
+	getDataFirst(clientPath);
 
 
 	if (pthread_mutex_init(&qLock, NULL) != 0) 
@@ -286,6 +339,30 @@ int main ( int argc, char *argv[] )
 
 	        pthread_create(&threadArray[i], NULL, pthreadFunction, (void *)i);
     	}
+
+	int writeNum3;
+	char log3[50];
+	int printCheck = 0;
+	while(currentLine != nclients)
+	{
+		if(printCheck == 0 && currentSize == qsize)
+		{
+			writeNum3 = sprintf(log3, "INFO: Queue full. Waiting to add more clients.\n");
+			if(write(logDes, log3, writeNum3) < 0)
+			{
+				printf("Failed to write to log file\n");
+				exit(-1);
+			}
+			printCheck = 1;
+		}
+		
+		else if (currentSize < qsize)
+		{
+			getDataSecond(clientPath);
+			printCheck = 0;
+		}
+			
+	}
 
 	for (i = 0; i < num_threads; i++)
 	{
