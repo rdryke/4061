@@ -89,9 +89,7 @@ void getDataFirst(char * filename)
 		head->path = strtemp;
 		tail = head;
 		currentLine++;
-		pthread_mutex_lock(&qLock);
 			currentSize++;
-		pthread_mutex_unlock(&qLock);
 	}
 	
 	while((line = file_getline(line,file)) != NULL && currentSize < qsize)
@@ -105,9 +103,7 @@ void getDataFirst(char * filename)
 		tail = temp;
 		currentLine++;
 		
-		pthread_mutex_lock(&qLock);
 			currentSize++;
-		pthread_mutex_unlock(&qLock);
 	}
 	fclose(file);
 	free(line);
@@ -138,9 +134,7 @@ void getDataSecond(char * filename)
 		tail = temp;
 		currentLine++;
 		
-		pthread_mutex_lock(&qLock);
 			currentSize++;
-		pthread_mutex_unlock(&qLock);
 	}
 	fclose(file);
 	free(line);
@@ -260,23 +254,30 @@ void * pthreadFunction( void * s)
 	int check;
 	int i;
 	char * fileName;
-	while (head != NULL) 
+	while (currentLine != nclients) 
 	{
-		check = 0;
+		
 		pthread_mutex_lock(&qLock);
-        		if (head != NULL)
-			{
-				fileName = head->path;	
-				head = head->next;
-				check = 1;
-				currentSize--;
-			}
 		pthread_mutex_unlock(&qLock);
-		if (check == 1)
+
+		while (head != NULL) 
 		{
-			clientFunction((long) pthread_self(), fileName);
-		}
-    	}
+			check = 0;
+			pthread_mutex_lock(&qLock);
+        			if (head != NULL)
+				{
+					fileName = head->path;	
+					head = head->next;
+					check = 1;
+					currentSize--;
+				}
+			pthread_mutex_unlock(&qLock);
+			if (check == 1)
+			{
+				clientFunction((long) pthread_self(), fileName);
+			}
+    		}
+	}
 
     	return(0);	
 }
@@ -343,8 +344,11 @@ int main ( int argc, char *argv[] )
 	int writeNum3;
 	char log3[50];
 	int printCheck = 0;
+	int h = 0;
 	while(currentLine != nclients)
 	{
+printf("iteration: %d\n\n",h++);
+printData();
 		if(printCheck == 0 && currentSize == qsize)
 		{
 			writeNum3 = sprintf(log3, "INFO: Queue full. Waiting to add more clients.\n");
@@ -356,9 +360,11 @@ int main ( int argc, char *argv[] )
 			printCheck = 1;
 		}
 		
-		else if (currentSize < qsize)
+		if (currentSize < qsize)
 		{
+			pthread_mutex_lock(&qLock);
 			getDataSecond(clientPath);
+			pthread_mutex_unlock(&qLock);
 			printCheck = 0;
 		}
 			
