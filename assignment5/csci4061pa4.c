@@ -144,6 +144,7 @@ void *child(void* arg) {
 					done = 0;
 					break;
 				default:
+					done = 0;
 					perror("WARN: Wrong message type.\n");
 					break;
 			}
@@ -191,7 +192,6 @@ int main(int argc, char* argv[]) {
 	switch (argc) {
 	case 3:
 		num_threads = atoi(argv[2]);
-		//clears the memory, +1 for NULL
 	case 2:
 		server_port = atoi(argv[1]);
 		break;
@@ -260,21 +260,18 @@ int main(int argc, char* argv[]) {
 	//add more clients to the queue
 	while(1)
 	{
-		sem_post(&sem);
 		clientlen = (sizeof(clientaddr));
 		if ((clientfd = accept(socketfd, (struct sockaddr *) &clientaddr, (socklen_t *) &clientlen)) < 0)
 		{
-			pthread_mutex_lock(&stdout_mutex);
 			perror("WARN: Issue connecting to client.\n");
-			pthread_mutex_unlock(&stdout_mutex);
 			continue;
 		}
 		if ((queue_push(q,clientfd)) == 1)
 		{
-			pthread_mutex_lock(&stdout_mutex);
 			perror("WARN: Issue pushing data in queue.\n");
-			pthread_mutex_unlock(&stdout_mutex);
+			continue;
 		}
+		sem_post(&sem);
 
 	}
 
