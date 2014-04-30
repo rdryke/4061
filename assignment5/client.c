@@ -7,11 +7,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-#include <arpa/inet.h> 
+#include <arpa/inet.h>
 #include "csci4061pa4.h"
 
 struct linkedList {		//simple linked list data structure for managing clients.
-        char * path;		
+        char * text;
         struct linkedList * next;
 };
 
@@ -23,7 +23,7 @@ typedef struct message msg;
 FILE* file_open(char* filename) //Used to open files.
 {
 	FILE* fp = fopen(filename, "r");
-	if(fp == NULL) 
+	if(fp == NULL)
 	{
 		fprintf(stderr, "ERROR: while opening file %s, abort.\n", filename);
 		exit(1);
@@ -43,8 +43,8 @@ int numberOfLines(char * filename)		//gets the number of lines in a file by coun
 	int nlines = 0;
 	char c;
 	FILE * file = file_open(filename);
-	
-	while ( (c = fgetc(file)) != EOF ) 
+
+	while ( (c = fgetc(file)) != EOF )
 	{
         	if ( c == '\n' )
 		{
@@ -66,25 +66,25 @@ void getData(char * filename)			//Parses the "clients.txt" passed to the program
 		struct linkedList * temp =  malloc(sizeof(struct linkedList));
 		head = temp;
 		char * strtemp = malloc(strlen(line));
-		char * tok = strtok(line, "\n");	//this gets rid of trailing newline characters in path names
+		char * tok = strtok(line, "\n");	//this gets rid of trailing newline characters in text
 		strcpy(strtemp, tok);
-		head->path = strtemp;			//iterate to next element of linked list
+		head->text = strtemp;			//iterate to next element of linked list
 		tail = head;
 	}
-	
-	while((line = file_getline(line,file)) != NULL)	//continue above process until all clients are in the list 
+
+	while((line = file_getline(line,file)) != NULL)	//continue above process until all clients are in the list
 	{
 		struct linkedList * temp =  malloc(sizeof(struct linkedList));
 		char * strtemp = malloc(strlen(line));
 		char * tok = strtok(line, "\n");
 		strcpy(strtemp, tok);
-		temp->path = strtemp;
+		temp->text = strtemp;
 		tail->next = temp;
 		tail = temp;
 	}
 	fclose(file);			//we are done with the file, so close it and we are done with line, so free it.
 	free(line);
-	
+
 
 }
 
@@ -93,53 +93,80 @@ int main(int argc, char *argv[])
 {
     int sockfd;
     msg* m;
-    struct sockaddr_in servaddr; 
-    
+    struct sockaddr_in servaddr;
+
     if(argc != 4)
     {
         perror("ERROR: Invalid number of arguments, see usage in README.\n");
         return 1;
-    } 
+    }
 
     getData(argv[3]);
 
-    m = malloc(sizeof(int) * 2 + sizeof(char) * 161);
+    char * outputFile = sprintf("%s.dcrypted", argv[3]);
+
+    int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
+
+    m = malloc(maxSize);
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("ERROR: Could not create socket \n");
         return 1;
-    } 
+    }
 
-    memset(&servaddr, '0', sizeof(servaddr)); 
+    memset(&servaddr, '0', sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(argv[2]); 
+    servaddr.sin_port = htons(argv[2]);
 
     if(inet_pton(AF_INET, argv[1], &servaddr.sin_addr)<=0)
     {
         perror("ERROR: inet_pton error occured\n");
         return 1;
-    } 
+    }
 
     if( connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
     {
        perror("ERROR: Connect Failed \n");
        return 1;
-    } 
-	
-    if ((recv(sockfd, m, sizeof(msg), 0)) == -1) {
+    }
+
+    if ((recv(sockfd, m, sizeof(msg), 0)) == -1)
+    {
         perror("WARN: Failed to receive handshake mesage.\n")
 	continue;
     }
-    else if (m->ID != 100) {
+    else if (m->ID != 100)
+    {
 	perror("WARN: Server failed to send a handshake message.\n"
-
+    }
     m->ID = 101;
 
-    if ((send(sockfd, m, sizeof(msg), 0)) == -1) {
+    if ((send(sockfd, m, sizeof(msg), 0)) == -1)
+    {
 	perror("WARN: Failed to send handshake response message.\n");
 	continue;
     }
+
+    struct linkedlist * current = head;
+
+    while (current != NULL)
+	    {
+		    m->payload = current->text;
+		    m->len = sizeof(current->text);
+		    if ((send(sockfd, m, maxSize, 0)) == -1)
+		    {
+			    perror("WARN: Failed to send text.\n");
+			    continue;
+		    }
+		    if ((recv(sockfd, m, maxSize, 0)) == -1)
+		    {
+			    perror("WARN: Failed to recieve dcrypted text.\n");
+			    continue;
+		    }
+
+
+	    }
 
 
     return 0;
