@@ -17,7 +17,7 @@ struct message
 {
 	int ID;
 	int len;
-	char * payload;
+	char payload[161];
 };
 
 #endif /* CSCI4061PA4_H_ */

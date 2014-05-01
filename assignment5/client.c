@@ -28,7 +28,7 @@ typedef struct message msg;
 
 void printData()	//used for testing purposes.
 {
-	struct linkedList * current =  head;
+	struct linkedList * current =  fileHead;
 	while (current != NULL)
 	{
 		printf("%s\n",current->text);
@@ -128,13 +128,13 @@ int main(int argc, char *argv[])
 	fileTemp->text = argv[i];
 	fileTail->next = fileTemp;
 	fileTail = fileTemp;
+	fileTail->next = NULL;
     }
 
     struct linkedList * fileCurrent = malloc(sizeof(struct linkedList));
     fileCurrent = fileHead;
 
     int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
-    printf("%d\n",maxSize);
 
     m = malloc(maxSize);
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -178,7 +178,6 @@ int main(int argc, char *argv[])
     }
 
 
-
     while(fileCurrent != NULL)		//Extra credit loop for multiple files
     {
 
@@ -206,9 +205,8 @@ int main(int argc, char *argv[])
     	while (current != NULL)
 	{
 		m->ID = 102;
-		m->payload = current->text;
+		strcpy(m->payload, current->text);
 		m->len = strlen(current->text);
-		printf("%d\n",m->len);
 		if ((send(sockfd, m, maxSize, 0)) == -1)
 		{
 			perror("WARN: Failed to send text.\n");
@@ -243,7 +241,6 @@ int main(int argc, char *argv[])
 
     m->ID = 104;
     m->len = 0;
-    m->payload = "";
 
     if ((send(sockfd, m, sizeof(msg), 0)) == -1)
     {

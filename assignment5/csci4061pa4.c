@@ -212,12 +212,11 @@ void *child(void* arg) {
 			{
 				case 102:
 					m->ID = 103;
-					printf("%d\n",m->len);
-					char * temp = (char *) malloc (sizeof(char) * m->len);
-					printf("%d\n",atoi((char *)m + 4));
-					temp = decrypt(m->payload);
-					m->payload = temp;
-					printf("%s\n",m->payload);
+					char * temp = (char *) malloc (sizeof(char) * m->len + 1);
+					char * temp1 = (char *) malloc (sizeof(char) * m->len + 1);
+					strcpy(temp,m->payload);
+					temp1 = decrypt(temp);
+					strcpy(m->payload, temp1);
 					if ((send(client, m, maxSize, 0)) == -1)
 					{
 						perror("WARN: Failed to send decrypted text back.\n");
