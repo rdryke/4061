@@ -167,7 +167,7 @@ void *child(void* arg) {
 		sem_wait(&sem);
 		if (pthread_mutex_lock(&stdout_mutex))
 		{
-			perror("WARN: Failed to lock stdout mutex.\n");
+			perror("ERROR: Failed to lock stdout mutex.\n");
 			continue;
 		}
 		client = queue_pop(q);
@@ -182,30 +182,56 @@ void *child(void* arg) {
 		m->len = 0;
 		if ((send(client, m, sizeof(msg), 0)) == -1)
 		{
-			perror("WARN: Failed to send handshake message.\n");
+			perror("ERROR: Failed to send handshake message.\n");
+			m->ID = 105;
+			if((send(client, m, sizeof(msg), 0)) == -1)
+				perror("ERROR: Failed to send error message.\n");
+			close(client);
 			continue;
 		}
 
 		if ((recv(client, m, sizeof(msg), 0)) == -1)
 		{
-			perror("WARN: Failed to recieve handshake response message.\n");
+			perror("ERROR: Failed to recieve handshake response message.\n");
+			m->ID = 105;
+			if((send(client, m, sizeof(msg), 0)) == -1)
+				perror("ERROR: Failed to send error message.\n");
+			close(client);
+			continue;
+		}
+		if(m->ID == 105) {
+			perror("Client sent error message");
+			pthread_mutex_lock(&stdout_mutex);
+			printf("Payload of error message received by thread %d: %s", *tid, m->payload);
+			pthread_mutex_unlock(&stdout_mutex);
+			close(client);
 			continue;
 		}
 
 		if (m->ID != 101)
 		{
-			perror("WARN: Client failed to send handshake response.\n");
+			perror("ERROR: Client failed to send handshake response.\n");
+			m->ID = 105;
+			if((send(client, m, sizeof(msg), 0)) == -1)
+				perror("ERROR: Failed to send error message.\n");
+			close(client);
 			continue;
 		}
 
 
 		int done = 1;
-
+		int closeCheck = 0;
 		while(done == 1)
 		{
 			if ((recv(client, m, maxSize, 0)) == -1)
 			{
-				perror("WARN: Failed to recieve payload message.\n");
+				perror("ERROR: Failed to recieve payload message.\n");
+				m->ID = 105;
+				if((send(client, m, sizeof(msg), 0)) == -1)
+					perror("ERROR: Failed to send error message.\n");
+				done = 0;
+				close(client);
+				closeCheck = 1;
 				continue;
 			}
 			switch (m->ID)
@@ -226,11 +252,12 @@ void *child(void* arg) {
 					done = 0;
 					break;
 				case 105:
-					perror("WARN: Client sent error message.\n");
+					perror("ERROR: Client sent error message.\n");
 					done = 0;
+					close(client);
+					closeCheck = 1;
 					break;
 				default:
-					done = 0;
 					perror("WARN: Wrong message type. Expected 102, 104, or 105\n");
 					break;
 			}
@@ -244,7 +271,10 @@ void *child(void* arg) {
 		}
 
 
-		printf("Thread %d finished handling client %d\n", *tid, client);
+		if(closeCheck)
+			printf("Payload of error message received by thread %d: %s", *tid, m->payload);
+		else
+			printf("Thread %d finished handling client %d\n", *tid, client);
 
 
 
@@ -252,7 +282,8 @@ void *child(void* arg) {
 		//If fails, don't have any choice!
 		pthread_mutex_unlock(&stdout_mutex);
 
-		close(client);
+		if(closeCheck == 0)		
+			close(client);
 
 		//just to make sure most get a fair chance
 		//of execution
