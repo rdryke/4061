@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
         struct linkedList * fileTemp2 = malloc(sizeof(struct linkedList));
 	fileTemp2->text = argv[i];
 	fileTail->next = fileTemp2;
-	fileTail = fileTemp;
+	fileTail = fileTemp2;
     }
 
     struct linkedList * fileCurrent = malloc(sizeof(struct linkedList));
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 	perror("WARN: Failed to send handshake response message.\n");
 	return 1;
     }
-
+printData();
 
     while(fileCurrent != NULL)		//Extra credit loop for multiple files
     {
