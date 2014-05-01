@@ -162,18 +162,29 @@ int main(int argc, char *argv[])
 
     if ((recv(sockfd, m, sizeof(msg), 0)) == -1)
     {
-        perror("WARN: Failed to receive handshake mesage.\n");
+        perror("ERROR: Failed to receive handshake mesage.\n");
+	m->ID = 105;
+	if((send(sockfd, m, sizeof(msg), 0)) == -1)
+		perror("ERROR: Failed to send error message.\n");
 	return 1;
     }
     else if (m->ID != 100)
     {
-	perror("WARN: Server failed to send a handshake message.\n");
+	perror("ERROR: Server failed to send a handshake message.\n");
+	m->ID = 105;
+	if((send(sockfd, m, sizeof(msg), 0)) == -1)
+		perror("ERROR: Failed to send error message.\n");
+	return 1;
     }
     m->ID = 101;
+    m->len = 0;
 
     if ((send(sockfd, m, sizeof(msg), 0)) == -1)
     {
-	perror("WARN: Failed to send handshake response message.\n");
+	perror("ERROR: Failed to send handshake response message.\n");
+	m->ID = 105;
+	if((send(sockfd, m, sizeof(msg), 0)) == -1)
+		perror("ERROR: Failed to send error message.\n");
 	return 1;
     }
 
@@ -186,15 +197,21 @@ int main(int argc, char *argv[])
 
 	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
    	{
-	   	 perror("ERROR: Failed to make output file string.\n");
-	  	 return 1;
+	   	perror("ERROR: Failed to make output file string.\n");
+		m->ID = 105;
+		if((send(sockfd, m, sizeof(msg), 0)) == -1)
+			perror("ERROR: Failed to send error message.\n");
+	  	return 1;
     	}
 
     	writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
     	if (writeFileDes < 0)
     	{
-		    perror("ERROR:Could not open .decrypt file\n") ;
-		    return 1;
+		perror("ERROR:Could not open .decrypt file\n");
+		m->ID = 105;
+		if((send(sockfd, m, sizeof(msg), 0)) == -1)
+			perror("ERROR: Failed to send error message.\n");
+		return 1;
     	}
 
 
@@ -250,7 +267,10 @@ int main(int argc, char *argv[])
 
     if ((send(sockfd, m, sizeof(msg), 0)) == -1)
     {
-	perror("WARN: Failed to send end of request message.\n");
+	perror("ERROR: Failed to send end of request message.\n");
+	m->ID = 105;
+	if((send(sockfd, m, sizeof(msg), 0)) == -1)
+		perror("ERROR: Failed to send error message.\n");
 	return 1;
     }
 
