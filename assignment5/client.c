@@ -195,12 +195,12 @@ int main(int argc, char *argv[])
 	    }
 
     m->ID = 104;
-    m->len = 104;
+    m->len = 0;
     m->payload = "";
 
     if ((send(sockfd, m, sizeof(msg), 0)) == -1)
     {
-	perror("WARN: Failed to send handshake response message.\n");
+	perror("WARN: Failed to send end of request message.\n");
 	return 1;
     }
 
