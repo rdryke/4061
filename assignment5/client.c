@@ -25,6 +25,17 @@ struct linkedList * fileHead = NULL;
 struct linkedList * fileTail = NULL;
 
 typedef struct message msg;
+
+void printData()	//used for testing purposes.
+{
+	struct linkedList * current =  head;
+	while (current != NULL)
+	{
+		printf("%s\n",current->text);
+		current = current->next;
+	}
+}
+
 FILE* file_open(char* filename) //Used to open files.
 {
 	FILE* fp = fopen(filename, "r");
@@ -106,20 +117,20 @@ int main(int argc, char *argv[])
         perror("ERROR: Invalid number of arguments, see usage in README.\n");
         return 1;
     }
-    
-    struct linkedList * fileTemp = malloc(sizeof(linkedList));
+
+    struct linkedList * fileTemp = malloc(sizeof(struct linkedList));
     fileHead = fileTemp;
     fileHead->text = argv[3];
     fileTail = fileHead;
-    
+
     int i;
     for (i = 4; i < argc; i++) {
 	fileTemp->text = argv[i];
 	fileTail->next = fileTemp;
 	fileTail = fileTemp;
-    }    
+    }
 
-    struct linkedList * fileCurrent = malloc(sizeof(linkedList));
+    struct linkedList * fileCurrent = malloc(sizeof(struct linkedList));
     fileCurrent = fileHead;
 
     int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
@@ -165,12 +176,14 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
+printData();
+
     while(fileCurrent != NULL)		//Extra credit loop for multiple files
     {
 
     	getData(fileCurrent->text);			//doing getData for each file
-    	char * outputFile = (char *) malloc(sizeof(fileCurrent->Text) + 11);
-    	
+    	char * outputFile = (char *) malloc(sizeof(fileCurrent->text) + 11);
+
 	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
    	{
 	   	 perror("ERROR: Failed to make output file string.\n");
