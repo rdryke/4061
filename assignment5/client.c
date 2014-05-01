@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-printData();
+
 
     while(fileCurrent != NULL)		//Extra credit loop for multiple files
     {
@@ -197,32 +197,41 @@ printData();
 		    return 1;
     	}
 
+
+
     	struct linkedList * current = (struct linkedList *) malloc(sizeof(struct linkedList));
     	current = head;
 
     	while (current != NULL)
 	{
+		m->ID = 102;
+		printf("%s\n",current->text);
 		m->payload = current->text;
 		m->len = sizeof(current->text);
 		if ((send(sockfd, m, maxSize, 0)) == -1)
 		{
 			perror("WARN: Failed to send text.\n");
+			current = current->next;
 			continue;
 		}
 		if ((recv(sockfd, m, maxSize, 0)) == -1)
 		{
 			perror("WARN: Failed to recieve dcrypted text.\n");
+			current = current->next;
 			continue;
 		}
+		printf("%d\n",m->ID);
 		if (m->ID != 103)
 		{
 			perror("WARN: Server failed to decrypt message.\n");
+			current = current->next;
 			continue;
 		}
 
 		if (write(writeFileDes, m->payload, m->len) < 0)	//write decrypted text into output file
 		{
 			perror("WARN: Write to .decrypt file failed\n");
+			current = current->next;
 			continue;
 		}
 		current = current->next;

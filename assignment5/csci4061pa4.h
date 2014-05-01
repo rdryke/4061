@@ -9,7 +9,7 @@
 
 char* file_getline(char* buffer, FILE* fp);
 
-int decrypt(char* in, char * out, int n);
+char * decrypt(char* text);
 
 void* child(void* args);
 
