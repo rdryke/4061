@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 		perror("ERROR: Failed to send error message.\n");
 	return 1;
     }
-    else if (m->ID != 100)
+    if (m->ID != 100)
     {
 	perror("ERROR: Server failed to send a handshake message.\n");
 	m->ID = 105;
