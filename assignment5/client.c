@@ -112,13 +112,12 @@ int main(int argc, char *argv[])
     fileHead->text = argv[3];
     fileTail = fileHead;
     
-    if(argc > 4)
-	int i;
-    	for (i = 4; i < argc; i++) {
-	    	fileTemp->text = argv[i];
-		fileTail->next = fileTemp;
-		fileTail = fileTemp;
-	}    
+    int i;
+    for (i = 4; i < argc; i++) {
+	fileTemp->text = argv[i];
+	fileTail->next = fileTemp;
+	fileTail = fileTemp;
+    }    
 
     struct linkedList * fileCurrent = malloc(sizeof(linkedList));
     fileCurrent = fileHead;
@@ -170,7 +169,7 @@ int main(int argc, char *argv[])
     {
 
     	getData(fileCurrent->text);			//doing getData for each file
-    	char * outputFile = (char *) malloc(sizeof(filecurrent->Text) + 11);
+    	char * outputFile = (char *) malloc(sizeof(fileCurrent->Text) + 11);
     	
 	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
    	{
@@ -217,6 +216,7 @@ int main(int argc, char *argv[])
 	}
 	close(writeFileDes);	//clean up for closing opened files and freeing temporary variables.
 	free(outputFile);
+	fileCurrent = fileCurrent->next;
     }
 
     m->ID = 104;
