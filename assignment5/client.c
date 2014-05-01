@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
     fileCurrent = fileHead;
 
     int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
+    printf("%d\n",maxSize);
 
     m = malloc(maxSize);
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -182,7 +183,7 @@ int main(int argc, char *argv[])
     {
 
     	getData(fileCurrent->text);			//doing getData for each file
-    	char * outputFile = (char *) malloc(sizeof(fileCurrent->text) + 11);
+    	char * outputFile = (char *) malloc(strlen(fileCurrent->text) + 11);
 
 	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
    	{
@@ -205,9 +206,9 @@ int main(int argc, char *argv[])
     	while (current != NULL)
 	{
 		m->ID = 102;
-		printf("%s\n",current->text);
 		m->payload = current->text;
-		m->len = sizeof(current->text);
+		m->len = strlen(current->text);
+		printf("%d\n",m->len);
 		if ((send(sockfd, m, maxSize, 0)) == -1)
 		{
 			perror("WARN: Failed to send text.\n");
@@ -220,7 +221,6 @@ int main(int argc, char *argv[])
 			current = current->next;
 			continue;
 		}
-		printf("%d\n",m->ID);
 		if (m->ID != 103)
 		{
 			perror("WARN: Server failed to decrypt message.\n");

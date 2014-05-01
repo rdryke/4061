@@ -176,7 +176,8 @@ void *child(void* arg) {
 
 		pthread_mutex_unlock(&stdout_mutex);
 
-		m = malloc(sizeof(msg));
+		int maxSize = 161 + sizeof(int) * 2;
+		m = malloc(maxSize);
 		m->ID = 100;
 		m->len = 0;
 		if ((send(client, m, sizeof(msg), 0)) == -1)
@@ -197,9 +198,7 @@ void *child(void* arg) {
 			continue;
 		}
 
-		m->payload = (char *) malloc(sizeof(char) * 161);
 
-		int maxSize = 161 + sizeof(int) * 2;
 		int done = 1;
 
 		while(done == 1)
@@ -213,12 +212,10 @@ void *child(void* arg) {
 			{
 				case 102:
 					m->ID = 103;
-					printf("%d\n",m->ID);
+					printf("%d\n",m->len);
 					char * temp = (char *) malloc (sizeof(char) * m->len);
-					printf("%s\n",m->payload);
-
+					printf("%d\n",atoi((char *)m + 4));
 					temp = decrypt(m->payload);
-					printf("%s\n",m->payload);
 					m->payload = temp;
 					printf("%s\n",m->payload);
 					if ((send(client, m, maxSize, 0)) == -1)
