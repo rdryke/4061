@@ -12,6 +12,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <semaphore.h>
 #include <netinet/in.h>
 #include <unistd.h>

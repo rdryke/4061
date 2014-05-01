@@ -194,6 +194,16 @@ int main(int argc, char *argv[])
 		    current = current->next;
 	    }
 
+    m->ID = 104;
+    m->len = 104;
+    m->payload = "";
+
+    if ((send(sockfd, m, sizeof(msg), 0)) == -1)
+    {
+	perror("WARN: Failed to send handshake response message.\n");
+	return 1;
+    }
+
     close(writeFileDes);	//clean up for closing opened files and freeing variables that are no longer needed
     free(outputFile);
 
