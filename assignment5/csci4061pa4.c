@@ -252,6 +252,7 @@ void *child(void* arg) {
 		//If fails, don't have any choice!
 		pthread_mutex_unlock(&stdout_mutex);
 
+		close(client);
 
 		//just to make sure most get a fair chance
 		//of execution

@@ -125,10 +125,10 @@ int main(int argc, char *argv[])
 
     int i;
     for (i = 4; i < argc; i++) {
-	fileTemp->text = argv[i];
-	fileTail->next = fileTemp;
+        struct linkedList * fileTemp2 = malloc(sizeof(struct linkedList));
+	fileTemp2->text = argv[i];
+	fileTail->next = fileTemp2;
 	fileTail = fileTemp;
-	fileTail->next = NULL;
     }
 
     struct linkedList * fileCurrent = malloc(sizeof(struct linkedList));
@@ -226,16 +226,22 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		if (write(writeFileDes, m->payload, m->len) < 0)	//write decrypted text into output file
+		char nline[m->len + 1];
+		strcpy(nline,m->payload);
+		strcat(nline, "\n");
+
+		if (write(writeFileDes, nline, m->len + 1) < 0)	//write decrypted text into output file
 		{
 			perror("WARN: Write to .decrypt file failed\n");
 			current = current->next;
 			continue;
 		}
 		current = current->next;
+	//	free(nline);
 	}
 	close(writeFileDes);	//clean up for closing opened files and freeing temporary variables.
 	free(outputFile);
+	free(current);
 	fileCurrent = fileCurrent->next;
     }
 
