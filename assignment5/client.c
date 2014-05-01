@@ -21,6 +21,8 @@ struct linkedList {		//simple linked list data structure for managing clients.
 struct linkedList * head = NULL;
 struct linkedList * tail = NULL;
 
+struct linkedList * fileHead = NULL;
+struct linkedList * fileTail = NULL;
 
 typedef struct message msg;
 FILE* file_open(char* filename) //Used to open files.
@@ -99,20 +101,27 @@ int main(int argc, char *argv[])
     int writeFileDes;
     struct sockaddr_in servaddr;
 
-    if(argc != 4)
+    if(argc < 4)
     {
         perror("ERROR: Invalid number of arguments, see usage in README.\n");
         return 1;
     }
+    
+    struct linkedList * fileTemp = malloc(sizeof(linkedList));
+    fileHead = fileTemp;
+    fileHead->text = argv[3];
+    fileTail = fileHead;
+    
+    if(argc > 4)
+	int i;
+    	for (i = 4; i < argc; i++) {
+	    	fileTemp->text = argv[i];
+		fileTail->next = fileTemp;
+		fileTail = fileTemp;
+	}    
 
-    getData(argv[3]);
-
-    char * outputFile = (char *) malloc(sizeof(argv[3]) + 11);
-    if ((sprintf(outputFile, "%s.decrypted", argv[3])) < 0)
-    {
-	    perror("ERROR: Failed to make output file string.\n");
-	    return 1;
-    }
+    struct linkedList * fileCurrent = malloc(sizeof(linkedList));
+    fileCurrent = fileHead;
 
     int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
 
@@ -156,43 +165,59 @@ int main(int argc, char *argv[])
 	perror("WARN: Failed to send handshake response message.\n");
 	return 1;
     }
-    writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
-    if (writeFileDes < 0)
+
+    while(fileCurrent != NULL)		//Extra credit loop for multiple files
     {
-	    perror("ERROR:Could not open .decrypt file\n") ;
-	    return 1;
+
+    	getData(fileCurrent->text);			//doing getData for each file
+    	char * outputFile = (char *) malloc(sizeof(filecurrent->Text) + 11);
+    	
+	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
+   	{
+	   	 perror("ERROR: Failed to make output file string.\n");
+	  	 return 1;
+    	}
+
+    	writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
+    	if (writeFileDes < 0)
+    	{
+		    perror("ERROR:Could not open .decrypt file\n") ;
+		    return 1;
+    	}
+
+    	struct linkedList * current = (struct linkedList *) malloc(sizeof(struct linkedList));
+    	current = head;
+
+    	while (current != NULL)
+	{
+		m->payload = current->text;
+		m->len = sizeof(current->text);
+		if ((send(sockfd, m, maxSize, 0)) == -1)
+		{
+			perror("WARN: Failed to send text.\n");
+			continue;
+		}
+		if ((recv(sockfd, m, maxSize, 0)) == -1)
+		{
+			perror("WARN: Failed to recieve dcrypted text.\n");
+			continue;
+		}
+		if (m->ID != 103)
+		{
+			perror("WARN: Server failed to decrypt message.\n");
+			continue;
+		}
+
+		if (write(writeFileDes, m->payload, m->len) < 0)	//write decrypted text into output file
+		{
+			perror("WARN: Write to .decrypt file failed\n");
+			continue;
+		}
+		current = current->next;
+	}
+	close(writeFileDes);	//clean up for closing opened files and freeing temporary variables.
+	free(outputFile);
     }
-
-    struct linkedList * current = (struct linkedList *) malloc(sizeof(struct linkedList));
-    current = head;
-
-    while (current != NULL)
-	    {
-		    m->payload = current->text;
-		    m->len = sizeof(current->text);
-		    if ((send(sockfd, m, maxSize, 0)) == -1)
-		    {
-			    perror("WARN: Failed to send text.\n");
-			    continue;
-		    }
-		    if ((recv(sockfd, m, maxSize, 0)) == -1)
-		    {
-			    perror("WARN: Failed to recieve dcrypted text.\n");
-			    continue;
-		    }
-		    if (m->ID != 103)
-		    {
-		          perror("WARN: Server failed to decrypt message.\n");
-			  continue;
-		    }
-
-		    if (write(writeFileDes, m->payload, m->len) < 0)	//write decrypted text into output file
-		    {
-			    perror("WARN: Write to .decrypt file failed\n");
-			    continue;
-		    }
-		    current = current->next;
-	    }
 
     m->ID = 104;
     m->len = 0;
@@ -204,8 +229,7 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-    close(writeFileDes);	//clean up for closing opened files and freeing variables that are no longer needed
-    free(outputFile);
+
 
     return 0;
 }
