@@ -14,6 +14,8 @@
 #include <sys/socket.h>
 #include <semaphore.h>
 #include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #ifdef __unix__
 # include <unistd.h>

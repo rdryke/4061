@@ -9,6 +9,9 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include "csci4061pa4.h"
+#include <fcntl.h>
+#include <unistd.h>
+
 
 struct linkedList {		//simple linked list data structure for managing clients.
         char * text;
@@ -93,6 +96,7 @@ int main(int argc, char *argv[])
 {
     int sockfd;
     msg* m;
+    int writeFileDes;
     struct sockaddr_in servaddr;
 
     if(argc != 4)
@@ -103,7 +107,12 @@ int main(int argc, char *argv[])
 
     getData(argv[3]);
 
-    char * outputFile = sprintf("%s.dcrypted", argv[3]);
+    char * outputFile = (char *) malloc(sizeof(argv[3]) + 11);
+    if ((sprintf(outputFile, "%s.decrypted", argv[3])) < 0)
+    {
+	    perror("ERROR: Failed to make output file string.\n");
+	    return 1;
+    }
 
     int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
 
@@ -117,7 +126,7 @@ int main(int argc, char *argv[])
     memset(&servaddr, '0', sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(argv[2]);
+    servaddr.sin_port = htons(atoi(argv[2]));
 
     if(inet_pton(AF_INET, argv[1], &servaddr.sin_addr)<=0)
     {
@@ -133,22 +142,29 @@ int main(int argc, char *argv[])
 
     if ((recv(sockfd, m, sizeof(msg), 0)) == -1)
     {
-        perror("WARN: Failed to receive handshake mesage.\n")
-	continue;
+        perror("WARN: Failed to receive handshake mesage.\n");
+	return 1;
     }
     else if (m->ID != 100)
     {
-	perror("WARN: Server failed to send a handshake message.\n"
+	perror("WARN: Server failed to send a handshake message.\n");
     }
     m->ID = 101;
 
     if ((send(sockfd, m, sizeof(msg), 0)) == -1)
     {
 	perror("WARN: Failed to send handshake response message.\n");
-	continue;
+	return 1;
+    }
+    writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
+    if (writeFileDes < 0)
+    {
+	    perror("ERROR:Could not open .decrypt file\n") ;
+	    return 1;
     }
 
-    struct linkedlist * current = head;
+    struct linkedList * current = (struct linkedList *) malloc(sizeof(struct linkedList));
+    current = head;
 
     while (current != NULL)
 	    {
@@ -164,10 +180,22 @@ int main(int argc, char *argv[])
 			    perror("WARN: Failed to recieve dcrypted text.\n");
 			    continue;
 		    }
+		    if (m->ID != 103)
+		    {
+		          perror("WARN: Server failed to decrypt message.\n");
+			  continue;
+		    }
 
-
+		    if (write(writeFileDes, m->payload, m->len) < 0)	//write decrypted text into output file
+		    {
+			    perror("WARN: Write to .decrypt file failed\n");
+			    continue;
+		    }
+		    current = current->next;
 	    }
 
+    close(writeFileDes);	//clean up for closing opened files and freeing variables that are no longer needed
+    free(outputFile);
 
     return 0;
 }
