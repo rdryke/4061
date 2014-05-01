@@ -162,10 +162,10 @@ int main(int argc, char *argv[])
 
     if ((recv(sockfd, m, sizeof(msg), 0)) == -1)
     {
-        perror("WARN: Failed to receive handshake mesage.\n");
+        perror("WARN: Failed to receive handshake message.\n");
 	return 1;
     }
-    else if (m->ID != 100)
+    if (m->ID != 100)
     {
 	perror("WARN: Server failed to send a handshake message.\n");
     }
