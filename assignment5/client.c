@@ -193,11 +193,16 @@ int main(int argc, char *argv[])
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(atoi(argv[2]));
+    char* host;
 
-    if(inet_pton(AF_INET, argv[1], &servaddr.sin_addr)<=0)
+    if(strcmp("localhost", argv[1]) == 0)
+	host = "127.0.0.1";
+    else
+	host = argv[1];
+    if(inet_pton(AF_INET, host, &servaddr.sin_addr)<=0)
     {
-        perror("ERROR: inet_pton error occured\n");
-        return 1;
+	perror("ERROR: inet_pton error occured\n");
+	return 1;
     }
 
     if( connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
