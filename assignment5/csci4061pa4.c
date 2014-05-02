@@ -24,6 +24,8 @@ static pthread_mutex_t stdout_mutex;
 sem_t sem;
 
 
+
+
 //output directory
 char* output_dir = NULL;
 
@@ -119,7 +121,7 @@ int decrypt(char* client) {
 }
 */
 
-char * decrypt(char * text)	//function to decrypt a string of text based on the rules in the assignment
+void decrypt(char * text)	//function to decrypt a string of text based on the rules in the assignment
 {
 	int length = strlen(text);
 	char * output = malloc(sizeof(char)*length);
@@ -150,18 +152,22 @@ char * decrypt(char * text)	//function to decrypt a string of text based on the 
 			*(output + i) = 98;
 		}
 	}
-    return output;
-
+	strcpy(text, output);
+	free(output);
+	return;
 }
 
-//TODO: Err handling is poor currently.
-//Always returns NULL.
 void *child(void* arg) {
 
 	int * tid = (int *) arg;
 
 	msg * m;
 	int client;
+
+	int maxSize = 161 + sizeof(int) * 2;
+
+	m = malloc(maxSize);
+	int length;
 
 	while (1) {
 		sem_wait(&sem);
@@ -187,8 +193,6 @@ void *child(void* arg) {
 
 		pthread_mutex_unlock(&stdout_mutex);
 
-		int maxSize = 161 + sizeof(int) * 2;
-		m = malloc(maxSize);
 		m->ID = 100;
 		m->len = 0;
 		if ((send(client, m, sizeof(msg), 0)) == -1)
@@ -250,14 +254,16 @@ void *child(void* arg) {
 				case 102:
 					m->ID = 103;
 					char * temp = (char *) malloc (sizeof(char) * m->len + 1);
-					char * temp1 = (char *) malloc (sizeof(char) * m->len + 1);
 					strcpy(temp,m->payload);
-					temp1 = decrypt(temp);
-					strcpy(m->payload, temp1);
+
+
+					decrypt(temp);
+					strcpy(m->payload, temp);
 					if ((send(client, m, maxSize, 0)) == -1)
 					{
 						perror("WARN: Failed to send decrypted text back.\n");
 					}
+					free(temp);
 					break;
 				case 104:
 					done = 0;
