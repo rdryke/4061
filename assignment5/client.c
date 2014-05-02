@@ -13,35 +13,28 @@
 #include <unistd.h>
 
 
-struct linkedList {		//simple linked list data structure for managing clients.
-        char * text;
-        struct linkedList * next;
-};
-
-struct linkedList * head = NULL;
-struct linkedList * tail = NULL;
-
-struct linkedList * fileHead = NULL;
-struct linkedList * fileTail = NULL;
 
 typedef struct message msg;
+
+
+/*
 
 void printData()	//used for testing purposes.
 {
 	struct linkedList * current =  head;
 	while (current != NULL)
 	{
-		if (current->text == NULL)
+		if (line == NULL)
 		{
 			printf("\n");
 			current = current->next;
 			continue;
 		}
-		printf("%s\n",current->text);
+		printf("%s\n",line);
 		current = current->next;
 	}
 }
-
+*/
 FILE* file_open(char* filename) //Used to open files.
 {
 	FILE* fp = fopen(filename, "r");
@@ -88,7 +81,7 @@ int numberOfLines(char * filename)		//gets the number of lines in a file by coun
 	return nlines;
 }
 
-
+/*
 void getData(char * filename, int n)			//Parses the "clients.txt" passed to the program and puts
 {						//clients into the linked list data structure
 	if (n == 0)
@@ -97,7 +90,7 @@ void getData(char * filename, int n)			//Parses the "clients.txt" passed to the 
 	}
 	else if (n == 1)
 	{
-		char* line = malloc(500*sizeof(char));
+		char* line = malloc(161*sizeof(char));
 		FILE * file = file_open(filename);
 		if ((line = file_getline(line,file)) != NULL)
 		{
@@ -167,7 +160,7 @@ void getData(char * filename, int n)			//Parses the "clients.txt" passed to the 
 	}
 
 }
-
+*/
 
 int main(int argc, char *argv[])
 {
@@ -175,30 +168,19 @@ int main(int argc, char *argv[])
     msg* m;
     int writeFileDes;
     struct sockaddr_in servaddr;
-
+    char * currentFile;
+    char * line;
+    int i, j;
+    int maxSize;
+    int lines;
+    char * outputFile;
+    FILE * f;
     if(argc < 4)
     {
         perror("ERROR: Invalid number of arguments, see usage in README.\n");
         return 1;
     }
-
-    struct linkedList * fileTemp = malloc(sizeof(struct linkedList));
-    fileHead = fileTemp;
-    fileHead->text = argv[3];
-    fileTail = fileHead;
-
-    int i;
-    for (i = 4; i < argc; i++) {
-        struct linkedList * fileTemp2 = malloc(sizeof(struct linkedList));
-	fileTemp2->text = argv[i];
-	fileTail->next = fileTemp2;
-	fileTail = fileTemp2;
-    }
-
-    struct linkedList * fileCurrent = malloc(sizeof(struct linkedList));
-    fileCurrent = fileHead;
-
-    int maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
+    maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
 
     m = malloc(maxSize);
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -256,38 +238,42 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-    while(fileCurrent != NULL)		//Extra credit loop for multiple files
+
+
+    for (i = 3; i < argc; i++)		//Extra credit loop for multiple files
     {
 
-	int lines = numberOfLines(fileCurrent->text);
-	if (lines == 0)
-	{
-    		char * outputFile = (char *) malloc(strlen(fileCurrent->text) + 11);
+        outputFile = (char *) malloc(strlen(argv[i]) + 11);
+        currentFile = (char *) malloc(strlen(argv[i]));
 
-		if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
-   		{
-	   		perror("ERROR: Failed to make output file string.\n");
-			m->ID = 105;
-			if((send(sockfd, m, sizeof(msg), 0)) == -1)
-				perror("ERROR: Failed to send error message.\n");
-	  		return 1;
-    		}
-    		writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
-		fileCurrent = fileCurrent->next;
-		continue;
+	strcpy(currentFile,argv[i]);
 
-	}
-    	getData(fileCurrent->text, lines);			//doing getData for each file
-    	char * outputFile = (char *) malloc(strlen(fileCurrent->text) + 11);
-
-	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
+	lines = numberOfLines(currentFile);
+	if ((sprintf(outputFile, "%s.decrypted", currentFile)) < 0)
    	{
-	   	perror("ERROR: Failed to make output file string.\n");
+		perror("ERROR: Failed to make output file string.\n");
 		m->ID = 105;
 		if((send(sockfd, m, sizeof(msg), 0)) == -1)
 			perror("ERROR: Failed to send error message.\n");
-	  	return 1;
+		return 1;
     	}
+
+	if (lines == 0)
+	{
+
+    		writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
+    		if (writeFileDes < 0)
+    		{
+			perror("ERROR:Could not open .decrypt file\n");
+			m->ID = 105;
+			if((send(sockfd, m, sizeof(msg), 0)) == -1)
+				perror("ERROR: Failed to send error message.\n");
+			return 1;
+    		}
+		continue;
+
+	}
+
 
     	writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
     	if (writeFileDes < 0)
@@ -300,38 +286,28 @@ int main(int argc, char *argv[])
     	}
 
 
+	line = (char *) malloc(161*sizeof(char));
+	f = file_open(currentFile);
 
-    	struct linkedList * current = (struct linkedList *) malloc(sizeof(struct linkedList));
-    	current = head;
-    	while (current != NULL)
+	while((line = file_getline(line,f)) != NULL)	//continue above process until all clients are in the list
 	{
-		if (current->text == NULL)
+		if (line == NULL)
 		{
-//			printf("got here!\n");
-//			FILE * ofile = file_open_append(outputFile);
-//			fprintf(ofile, "sdfg\n");
-//			fflush(ofile);
-//			fclose(ofile);
 			write(writeFileDes, "\n", 1);
-			current= current->next;
 			continue;
 		}
 		m->ID = 102;
-	//	printf("%d\n",m->len);
-	//	printf("%sn",m->payload);
 
-		strcpy(m->payload, current->text);
-		m->len = strlen(current->text);
+		strcpy(m->payload, line);
+		m->len = strlen(line);
 		if ((send(sockfd, m, maxSize, 0)) == -1)
 		{
 			perror("WARN: Failed to send text.\n");
-			current = current->next;
 			continue;
 		}
 		if ((recv(sockfd, m, maxSize, 0)) == -1)
 		{
 			perror("WARN: Failed to recieve dcrypted text.\n");
-			current = current->next;
 			continue;
 		}
 		if (m->ID == 105) {
@@ -341,27 +317,25 @@ int main(int argc, char *argv[])
 		if (m->ID != 103)
 		{
 			perror("WARN: Server failed to decrypt message.\n");
-			current = current->next;
 			continue;
 		}
 
-		char nline[m->len + 1];
-		strcpy(nline,m->payload);
-		strcat(nline, "\n");
+//		char nline[m->len + 1];
+//		strcpy(nline,m->payload);
+//		strcat(nline, "\n");
 
-		if (write(writeFileDes, nline, m->len + 1) < 0)	//write decrypted text into output file
+		if (write(writeFileDes, m->payload, m->len) < 0)	//write decrypted text into output file
 		{
 			perror("WARN: Write to .decrypt file failed\n");
-			current = current->next;
 			continue;
 		}
-		current = current->next;
 	//	free(nline);
 	}
 	close(writeFileDes);	//clean up for closing opened files and freeing temporary variables.
+	fclose(f);	//clean up for closing opened files and freeing temporary variables.
 	free(outputFile);
-	free(current);
-	fileCurrent = fileCurrent->next;
+	free(currentFile);
+	free(line);
     }
 
     m->ID = 104;
