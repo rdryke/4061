@@ -28,9 +28,15 @@ typedef struct message msg;
 
 void printData()	//used for testing purposes.
 {
-	struct linkedList * current =  fileHead;
+	struct linkedList * current =  head;
 	while (current != NULL)
 	{
+		if (current->text == NULL)
+		{
+			printf("\n");
+			current = current->next;
+			continue;
+		}
 		printf("%s\n",current->text);
 		current = current->next;
 	}
@@ -39,6 +45,17 @@ void printData()	//used for testing purposes.
 FILE* file_open(char* filename) //Used to open files.
 {
 	FILE* fp = fopen(filename, "r");
+	if(fp == NULL)
+	{
+		fprintf(stderr, "ERROR: while opening file %s, abort.\n", filename);
+		exit(1);
+	}
+	return fp;
+}
+
+FILE* file_open_append(char* filename) //Used to open files.
+{
+	FILE* fp = fopen(filename, "a+");
 	if(fp == NULL)
 	{
 		fprintf(stderr, "ERROR: while opening file %s, abort.\n", filename);
@@ -72,35 +89,82 @@ int numberOfLines(char * filename)		//gets the number of lines in a file by coun
 }
 
 
-void getData(char * filename)			//Parses the "clients.txt" passed to the program and puts
+void getData(char * filename, int n)			//Parses the "clients.txt" passed to the program and puts
 {						//clients into the linked list data structure
-
-	char* line = malloc(500*sizeof(char));
-	FILE * file = file_open(filename);
-	if ((line = file_getline(line,file)) != NULL)
+	if (n == 0)
 	{
-		struct linkedList * temp =  malloc(sizeof(struct linkedList));
-		head = temp;
-		char * strtemp = malloc(strlen(line));
-		char * tok = strtok(line, "\n");	//this gets rid of trailing newline characters in text
-		strcpy(strtemp, tok);
-		head->text = strtemp;			//iterate to next element of linked list
-		tail = head;
-	}
 
-	while((line = file_getline(line,file)) != NULL)	//continue above process until all clients are in the list
-	{
-		struct linkedList * temp =  malloc(sizeof(struct linkedList));
-		char * strtemp = malloc(strlen(line));
-		char * tok = strtok(line, "\n");
-		strcpy(strtemp, tok);
-		temp->text = strtemp;
-		tail->next = temp;
-		tail = temp;
 	}
+	else if (n == 1)
+	{
+		char* line = malloc(500*sizeof(char));
+		FILE * file = file_open(filename);
+		if ((line = file_getline(line,file)) != NULL)
+		{
+			struct linkedList * temp =  malloc(sizeof(struct linkedList));
+			head = temp;
+			char * strtemp = malloc(strlen(line));
+			char * tok = strtok(line, "\n");	//this gets rid of trailing newline characters in text
+			strcpy(strtemp, tok);
+			head->text = strtemp;			//iterate to next element of linked list
+			head->next =NULL;
+		}
 	fclose(file);			//we are done with the file, so close it and we are done with line, so free it.
 	free(line);
 
+	}
+	else
+	{
+		char* line = malloc(500*sizeof(char));
+		FILE * file = file_open(filename);
+		if ((line = file_getline(line,file)) != NULL)
+		{
+			struct linkedList * temp =  malloc(sizeof(struct linkedList));
+			char * strtemp = malloc(strlen(line));
+			int l = strlen(line);
+			if (l == 1)
+			{
+				head = temp;
+				head->text = "";			//iterate to next element of linked list
+				tail = head;
+			}
+			else
+			{
+				char * tok = strtok(line, "\n");	//this gets rid of trailing newline characters in text
+				strcpy(strtemp, tok);
+				head = temp;
+				head->text = strtemp;			//iterate to next element of linked list
+				tail = head;
+			}
+		//	printf("|%s|\n",temp->text);
+		}
+
+		while((line = file_getline(line,file)) != NULL)	//continue above process until all clients are in the list
+		{
+			struct linkedList * temp =  malloc(sizeof(struct linkedList));
+			char * strtemp = malloc(strlen(line));
+			int l = strlen(line);
+			if (l == 1)
+			{
+				temp->text = "";			//iterate to next element of linked list
+				tail->next = temp;
+				tail = temp;
+			}
+			else
+			{
+				char * tok = strtok(line, "\n");
+				strcpy(strtemp, tok);
+				temp->text = strtemp;
+				tail->next = temp;
+				tail = temp;
+			}
+			tail->next = NULL;
+			//printf("|%s|\n",temp->text);
+		}
+		fclose(file);			//we are done with the file, so close it and we are done with line, so free it.
+		free(line);
+
+	}
 
 }
 
@@ -187,12 +251,29 @@ int main(int argc, char *argv[])
 		perror("ERROR: Failed to send error message.\n");
 	return 1;
     }
-printData();
 
     while(fileCurrent != NULL)		//Extra credit loop for multiple files
     {
 
-    	getData(fileCurrent->text);			//doing getData for each file
+	int lines = numberOfLines(fileCurrent->text);
+	if (lines == 0)
+	{
+    		char * outputFile = (char *) malloc(strlen(fileCurrent->text) + 11);
+
+		if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
+   		{
+	   		perror("ERROR: Failed to make output file string.\n");
+			m->ID = 105;
+			if((send(sockfd, m, sizeof(msg), 0)) == -1)
+				perror("ERROR: Failed to send error message.\n");
+	  		return 1;
+    		}
+    		writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
+		fileCurrent = fileCurrent->next;
+		continue;
+
+	}
+    	getData(fileCurrent->text, lines);			//doing getData for each file
     	char * outputFile = (char *) malloc(strlen(fileCurrent->text) + 11);
 
 	if ((sprintf(outputFile, "%s.decrypted", fileCurrent->text)) < 0)
@@ -218,10 +299,23 @@ printData();
 
     	struct linkedList * current = (struct linkedList *) malloc(sizeof(struct linkedList));
     	current = head;
-
     	while (current != NULL)
 	{
+		if (current->text == NULL)
+		{
+//			printf("got here!\n");
+//			FILE * ofile = file_open_append(outputFile);
+//			fprintf(ofile, "sdfg\n");
+//			fflush(ofile);
+//			fclose(ofile);
+			write(writeFileDes, "\n", 1);
+			current= current->next;
+			continue;
+		}
 		m->ID = 102;
+	//	printf("%d\n",m->len);
+	//	printf("%sn",m->payload);
+
 		strcpy(m->payload, current->text);
 		m->len = strlen(current->text);
 		if ((send(sockfd, m, maxSize, 0)) == -1)

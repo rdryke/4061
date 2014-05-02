@@ -165,14 +165,25 @@ void *child(void* arg) {
 
 	while (1) {
 		sem_wait(&sem);
+
+		client = queue_pop(q);
+
+		struct sockaddr_in addr;
+		int addr_len;
+		addr_len = sizeof(addr);
+		if (getpeername(client, &addr, &addr_len) == -1)
+		{
+			perror("ERROR: Failed to get address.\n");
+			continue;
+		}
+
 		if (pthread_mutex_lock(&stdout_mutex))
 		{
 			perror("ERROR: Failed to lock stdout mutex.\n");
 			continue;
 		}
-		client = queue_pop(q);
 
-		printf("Thread %d is handling client %d\n", *tid, client);
+		printf("Thread %d is handling client (%s,%d)\n", *tid, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 		pthread_mutex_unlock(&stdout_mutex);
 
@@ -282,7 +293,7 @@ void *child(void* arg) {
 		//If fails, don't have any choice!
 		pthread_mutex_unlock(&stdout_mutex);
 
-		if(closeCheck == 0)		
+		if(closeCheck == 0)
 			close(client);
 
 		//just to make sure most get a fair chance

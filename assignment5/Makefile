@@ -9,7 +9,7 @@ decryption_server: queue.o csci4061pa4.o
 	$(CC) queue.o csci4061pa4.o -o decryption_server $(LIBS)
 
 decryption_client: queue.o client.o
-	$(CC) queue.o client.o -o decryption_client
+	$(CC) queue.o client.o -o decryption_client -g
 
 queue.o: queue.c main.h queue.h
 	$(CC) $(CFLAGS) queue.c
