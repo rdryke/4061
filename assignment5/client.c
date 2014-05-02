@@ -232,6 +232,10 @@ int main(int argc, char *argv[])
 		perror("ERROR: Failed to send error message.\n");
 	return 1;
     }
+    if (m->ID == 105) {
+	perror("Server sent error message.");
+	printf("Payload of error message received from server: %s", m->payload);
+	}
     if (m->ID != 100)
     {
 	perror("ERROR: Server failed to send a handshake message.\n");
@@ -329,6 +333,10 @@ int main(int argc, char *argv[])
 			perror("WARN: Failed to recieve dcrypted text.\n");
 			current = current->next;
 			continue;
+		}
+		if (m->ID == 105) {
+		perror("Server sent error message.");
+		printf("Payload of error message received from server: %s", m->payload);
 		}
 		if (m->ID != 103)
 		{
