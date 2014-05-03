@@ -159,7 +159,7 @@ void decrypt(char * text)	//function to decrypt a string of text based on the ru
 
 void *child(void* arg) {
 
-	int * tid = (int *) arg;
+	int * tid = (int *) arg;	//initialize some variables
 
 	msg * m;
 	int client;
@@ -169,21 +169,21 @@ void *child(void* arg) {
 	m = malloc(maxSize);
 	int length;
 
-	while (1) {
-		sem_wait(&sem);
+	while (1) {			//server should run until manual termination
+		sem_wait(&sem);		//manage semaphore
 
 		client = queue_pop(q);
 
 		struct sockaddr_in addr;
 		int addr_len;
 		addr_len = sizeof(addr);
-		if (getpeername(client, &addr, &addr_len) == -1)
+		if (getpeername(client, &addr, &addr_len) == -1)	//get address
 		{
 			perror("ERROR: Failed to get address.\n");
 			continue;
 		}
 
-		if (pthread_mutex_lock(&stdout_mutex))
+		if (pthread_mutex_lock(&stdout_mutex))			//manage stdout mutex for printing properly
 		{
 			perror("ERROR: Failed to lock stdout mutex.\n");
 			continue;
@@ -193,7 +193,7 @@ void *child(void* arg) {
 
 		pthread_mutex_unlock(&stdout_mutex);
 
-		m->ID = 100;
+		m->ID = 100;		//handshake message
 		m->len = 0;
 		if ((send(client, m, sizeof(msg), 0)) == -1)
 		{
@@ -205,7 +205,7 @@ void *child(void* arg) {
 			continue;
 		}
 
-		if ((recv(client, m, sizeof(msg), 0)) == -1)
+		if ((recv(client, m, sizeof(msg), 0)) == -1)	//listen for handshake response message
 		{
 			perror("ERROR: Failed to recieve handshake response message.\n");
 			m->ID = 105;
@@ -235,10 +235,10 @@ void *child(void* arg) {
 
 
 		int done = 1;
-		int closeCheck = 0;
+		int closeCheck = 0;	//temp variable for seeing if file was closed due to error
 		while(done == 1)
 		{
-			if ((recv(client, m, maxSize, 0)) == -1)
+			if ((recv(client, m, maxSize, 0)) == -1)	//receive payload
 			{
 				perror("ERROR: Failed to recieve payload message.\n");
 				m->ID = 105;
@@ -249,7 +249,7 @@ void *child(void* arg) {
 				closeCheck = 1;
 				continue;
 			}
-			switch (m->ID)
+			switch (m->ID)	//handle receiving messages and errors
 			{
 				case 102:
 					m->ID = 103;
@@ -288,7 +288,7 @@ void *child(void* arg) {
 		}
 
 
-		if(closeCheck)
+		if(closeCheck)	//print out required input or error message
 			printf("Payload of error message received by thread %d: %s", *tid, m->payload);
 		else
 			printf("Thread %d finished handling client %d\n", *tid, client);
@@ -315,7 +315,7 @@ void *child(void* arg) {
 //./retrieve client_dir output_dir [num_threads]
 int main(int argc, char* argv[]) {
 
-	char *clients = NULL;
+	char *clients = NULL;		//initialize variables
 	int num_threads = 5, i, error;
 	pthread_t *tids;
 	int server_port;
@@ -324,9 +324,9 @@ int main(int argc, char* argv[]) {
 	int clientlen;
 	struct sockaddr_in clientaddr;
 	struct sockaddr_in serveraddr;
-	switch (argc) {
+	switch (argc) {	
 	case 3:
-		num_threads = atoi(argv[2]);
+		num_threads = atoi(argv[2]);	//set up thread number and server port
 	case 2:
 		server_port = atoi(argv[1]);
 		break;
@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
 		perror("ERROR: Invalid number of arguments, see usage in README.\n");
 		break;
 	}
-	if ((sem_init(&sem, 0, 0)) < 0)
+	if ((sem_init(&sem, 0, 0)) < 0)		//set up semaphore for queue handling
 	{
 		perror("ERROR: Failed to initiate semaphore.\n");
 		return 1;
@@ -344,7 +344,7 @@ int main(int argc, char* argv[]) {
 
 	queue_init(&q);
 
-	if ((socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	if ((socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)	//set up socket
 	{
 		perror("ERROR: Failed to open socket.\n");
 		return 1;
@@ -362,19 +362,19 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	if (bind(socketfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)
+	if (bind(socketfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)	//bind socket
 	{
 		perror("ERROR: Failed to bind.\n");
 		return 1;
 	}
 
-	if(listen(socketfd, 10) < 0)
+	if(listen(socketfd, 10) < 0)	//listen with socket
 	{
 		perror("ERROR: Failed to open socket.\n");
 		return 1;
 	}
 
-	if ((pthread_mutex_init(&stdout_mutex, NULL)) < 0)
+	if ((pthread_mutex_init(&stdout_mutex, NULL)) < 0)	//set up mutex for stdout
 	{
 		perror("ERROR: Failed to initiate mutex.\n");
 		return 1;

@@ -164,7 +164,7 @@ void getData(char * filename, int n)			//Parses the "clients.txt" passed to the 
 
 int main(int argc, char *argv[])
 {
-    int sockfd;
+    int sockfd;		//initalize variables
     msg* m;
     int writeFileDes;
     struct sockaddr_in servaddr;
@@ -183,19 +183,19 @@ int main(int argc, char *argv[])
     maxSize = (sizeof(int) * 2 + sizeof(char) * 161);
 
     m = malloc(maxSize);
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)	//set up socket
     {
         perror("ERROR: Could not create socket \n");
         return 1;
     }
 
-    memset(&servaddr, '0', sizeof(servaddr));
+    memset(&servaddr, '0', sizeof(servaddr));		//set up server address recognition
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(atoi(argv[2]));
     char* host;
 
-    if(strcmp("localhost", argv[1]) == 0)
+    if(strcmp("localhost", argv[1]) == 0)	//handle localhost case
 	host = "127.0.0.1";
     else
 	host = argv[1];
@@ -205,13 +205,13 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-    if( connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+    if( connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)	//connect with server
     {
        perror("ERROR: Connect Failed \n");
        return 1;
     }
 
-    if ((recv(sockfd, m, sizeof(msg), 0)) == -1)
+    if ((recv(sockfd, m, sizeof(msg), 0)) == -1)		//listen for handshake message
     {
         perror("ERROR: Failed to receive handshake mesage.\n");
 	m->ID = 105;
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
     m->ID = 101;
     m->len = 0;
 
-    if ((send(sockfd, m, sizeof(msg), 0)) == -1)
+    if ((send(sockfd, m, sizeof(msg), 0)) == -1)		//send handshake response message
     {
 	perror("ERROR: Failed to send handshake response message.\n");
 	m->ID = 105;
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 
 	strcpy(currentFile,argv[i]);
 
-	lines = numberOfLines(currentFile);
+	lines = numberOfLines(currentFile);		//for parsing the lines in the files
 	if ((sprintf(outputFile, "%s.decrypted", currentFile)) < 0)
    	{
 		perror("ERROR: Failed to make output file string.\n");
@@ -263,10 +263,10 @@ int main(int argc, char *argv[])
 		return 1;
     	}
 
-	if (lines == 0)
+	if (lines == 0)		//handle empty client file case
 	{
 
-    		writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
+    		writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);	//open file to write to
     		if (writeFileDes < 0)
     		{
 			perror("ERROR:Could not open .decrypt file\n");
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
 	}
 
 
-    	writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);
+    	writeFileDes = open(outputFile, O_CREAT | O_RDWR | O_APPEND | O_TRUNC, S_IWUSR | S_IRUSR);	//open file to write to
     	if (writeFileDes < 0)
     	{
 		perror("ERROR:Could not open .decrypt file\n");
@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
 			write(writeFileDes, "\n", 1);
 			continue;
 		}
-		m->ID = 102;
+		m->ID = 102;				//send payload
 
 		strcpy(m->payload, line);
 		m->len = strlen(line);
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
 			perror("WARN: Failed to send text.\n");
 			continue;
 		}
-		if ((recv(sockfd, m, maxSize, 0)) == -1)
+		if ((recv(sockfd, m, maxSize, 0)) == -1)	//listen for decrypted text
 		{
 			perror("WARN: Failed to recieve dcrypted text.\n");
 			continue;
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
 	free(line);
     }
 
-    m->ID = 104;
+    m->ID = 104;	//end of request
     m->len = 0;
 
     if ((send(sockfd, m, sizeof(msg), 0)) == -1)

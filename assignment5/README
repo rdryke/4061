@@ -1,0 +1,23 @@
+/* CSci4061 S2013 PA5
+section: 5
+date: 05/02/2014
+name: Jordan Anderson, Robert Dryke
+id: 4383056, 4531259 * Extra credit: implemented
+
+CODE ORGANIZATION:
+	This program uses multiple threads to implement a client-server system. The clients send a text file to the server for decryption, and the server assigns a thread to handle each decryption request (client). The server and client communicate with each other by sending messages via sockets. Each message has an ID specifying what the message's purpose is (handshake message, decryption request, etc.), a payload (the text that needs decryption sent to the server or the decrypted text sent back to the client), and an integer specifying the length of the payload.
+
+POTENTIAL ERRORS:
+Most errors will be reported by appropriate error messages. Some common potential errors are the result of failed communication between the client and server. If one end experiences unexpected behavior, an appropriate error message will be printed, an error message will be sent to the other end, and the connection will be terminated.
+
+USAGE INSTRUCTIONS: This code can be compiled with the provided Makefile or with a command line instructions of "gcc queue.o csci4061pa.o -o decryption_server -lpthread", "gcc queue.o client.o -o decryption_client -g", "gcc -g -c -Wall queue.c", "gcc -g -c -Wall csci4061.c -lpthread", and "gcc -g -c -Wall client.c".
+
+The program can be run by initializing a server with the command line instruction: 
+"./decryption_server port_number num_threads" 
+where port_number is the port number to be used for socket communications, and num_threads is the number of threads the server will have available to use for clients (default to 5 if this argument is not passed).
+
+Clients are then initialized to communicate with the server with the command line instruction 
+"./decryption_client server_host server_port_number file_path"
+Where server_host is the server host address, server_port_number is the port number used for communicating with the server, and file_path is the path to the text file that the client needs decrypted.
+
+The server will continue to run and accept any clients that request decryption until it is manually terminated.
